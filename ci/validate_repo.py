@@ -23,8 +23,10 @@ def main() -> None:
         "src/CMakeLists.txt",
         "docs/ARCHITECTURE.md",
         "include/openvino/gfx_plugin/plugin.hpp",
+        "ci/prepare_rpi_toolchain.py",
         "third_party/llvm-project",
         "third_party/Vulkan-Headers",
+        "tools/gfx_rpi_vulkan_toolchain_builder.py",
     ]:
         require(path)
 

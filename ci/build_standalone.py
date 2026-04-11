@@ -22,10 +22,11 @@ def run(cmd: list[str]) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build ov-gfx-plugin against a prepared OpenVINO install tree.")
-    parser.add_argument("--target-platform", choices=("host", "android"), default="host")
+    parser.add_argument("--target-platform", choices=("host", "android", "rpi"), default="host")
     parser.add_argument("--android-abi", default="arm64-v8a")
     parser.add_argument("--android-platform", default="android-24")
     parser.add_argument("--android-stl", default="c++_shared")
+    parser.add_argument("--toolchain-file", default="")
     return parser.parse_args()
 
 
@@ -33,6 +34,7 @@ def configure_args(options: argparse.Namespace) -> list[str]:
     developer_package_dir = os.environ.get("OpenVINODeveloperPackage_DIR")
     if not developer_package_dir:
         raise RuntimeError("OpenVINODeveloperPackage_DIR must be set")
+    openvino_dir = os.environ.get("OpenVINO_DIR")
 
     cmake_args = [
         "cmake",
@@ -46,6 +48,8 @@ def configure_args(options: argparse.Namespace) -> list[str]:
         "-DENABLE_TESTS=OFF",
         f"-DOpenVINODeveloperPackage_DIR={developer_package_dir}",
     ]
+    if openvino_dir:
+        cmake_args.append(f"-DOpenVINO_DIR={openvino_dir}")
     if options.target_platform == "android":
         android_ndk_root = os.environ.get("ANDROID_NDK_ROOT") or os.environ.get("ANDROID_NDK_HOME")
         if not android_ndk_root:
@@ -58,6 +62,17 @@ def configure_args(options: argparse.Namespace) -> list[str]:
             "-DGFX_ENABLE_METAL=OFF",
         ]
         cmake_args.extend(args_list)
+    elif options.target_platform == "rpi":
+        toolchain_file = options.toolchain_file or os.environ.get("GFX_RPI_TOOLCHAIN_FILE")
+        if not toolchain_file:
+            raise RuntimeError("GFX_RPI_TOOLCHAIN_FILE or --toolchain-file must be set for Raspberry Pi cross-builds")
+        cmake_args.extend(
+            [
+                f"-DCMAKE_TOOLCHAIN_FILE={toolchain_file}",
+                "-DGFX_ENABLE_METAL=OFF",
+                "-DGFX_DEFAULT_BACKEND=vulkan",
+            ]
+        )
     elif platform.system() == "Linux":
         cmake_args.append("-DGFX_ENABLE_METAL=OFF")
     return cmake_args
