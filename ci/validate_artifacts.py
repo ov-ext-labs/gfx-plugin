@@ -12,8 +12,11 @@ BUILD_DIR = REPO_ROOT / ".ci" / "build"
 
 
 def expected_library_name() -> str:
-    if platform.system() == "Windows":
+    system = platform.system()
+    if system == "Windows":
         return "openvino_gfx_plugin.dll"
+    if system == "Darwin":
+        return "libopenvino_gfx_plugin.dylib"
     return "libopenvino_gfx_plugin.so"
 
 
