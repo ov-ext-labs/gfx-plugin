@@ -11,3 +11,5 @@ jobs:
     uses: ovx-labs/ov-ci/.github/workflows/reusable-component-ci.yml@main
     with:
       component: ov-gfx-plugin
+      submodules: recursive
+      validation-command: python3 ci/validate_repo.py
