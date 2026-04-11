@@ -11,5 +11,36 @@ jobs:
     uses: ovx-labs/ov-ci/.github/workflows/reusable-component-ci.yml@main
     with:
       component: ov-gfx-plugin
+      openvino-repo: ovx-labs/openvino
+      openvino-ref: master
+      openvino-submodules: recursive
+      openvino-ubuntu-packages: >-
+        build-essential
+        ninja-build
+        ccache
+        pkgconf
+        git
+        libtbb-dev
+        libpugixml-dev
+        patchelf
+        libsnappy-dev
+        python3-pip
+        python3-venv
+        python3-setuptools
+        libpython3-dev
+        pybind11-dev
+        libffi-dev
+        libvulkan-dev
+      openvino-cmake-args: >-
+        -DENABLE_PYTHON=OFF
+        -DENABLE_JS=OFF
+        -DENABLE_SAMPLES=OFF
+        -DENABLE_TESTS=OFF
+        -DENABLE_OV_ONNX_FRONTEND=OFF
+        -DENABLE_OV_PADDLE_FRONTEND=OFF
+        -DENABLE_OV_TF_FRONTEND=OFF
+        -DENABLE_OV_TF_LITE_FRONTEND=OFF
       submodules: recursive
       validation-command: python3 ci/validate_repo.py
+      build-command: python3 ci/build_standalone.py
+      test-command: python3 ci/validate_artifacts.py
