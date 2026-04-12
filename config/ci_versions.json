@@ -1,0 +1,16 @@
+{
+  "android": {
+    "abi": "arm64-v8a",
+    "api_level": "36",
+    "stl": "c++_shared",
+    "ndk_version": "29.0.14206865",
+    "sdk_packages": [
+      "platform-tools",
+      "platforms;android-36"
+    ],
+    "tbb": {
+      "repo": "https://github.com/uxlfoundation/oneTBB",
+      "ref": "v2022.3.0"
+    }
+  }
+}

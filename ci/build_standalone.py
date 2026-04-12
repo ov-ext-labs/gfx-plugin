@@ -10,6 +10,8 @@ import shlex
 import subprocess
 from pathlib import Path
 
+from ci_config import load_ci_config
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BUILD_DIR = REPO_ROOT / ".ci" / "build"
@@ -23,9 +25,10 @@ def run(cmd: list[str]) -> None:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build ov-gfx-plugin against a prepared OpenVINO install tree.")
     parser.add_argument("--target-platform", choices=("host", "android", "rpi"), default="host")
-    parser.add_argument("--android-abi", default="arm64-v8a")
-    parser.add_argument("--android-platform", default="36")
-    parser.add_argument("--android-stl", default="c++_shared")
+    parser.add_argument("--config", default="")
+    parser.add_argument("--android-abi", default="")
+    parser.add_argument("--android-platform", default="")
+    parser.add_argument("--android-stl", default="")
     parser.add_argument("--toolchain-file", default="")
     return parser.parse_args()
 
@@ -51,14 +54,18 @@ def configure_args(options: argparse.Namespace) -> list[str]:
     if openvino_dir:
         cmake_args.append(f"-DOpenVINO_DIR={openvino_dir}")
     if options.target_platform == "android":
+        config = load_ci_config(options.config or None)["android"]
+        android_abi = options.android_abi or str(config["abi"])
+        android_platform = options.android_platform or str(config["api_level"])
+        android_stl = options.android_stl or str(config["stl"])
         android_ndk_root = os.environ.get("ANDROID_NDK_ROOT") or os.environ.get("ANDROID_NDK_HOME")
         if not android_ndk_root:
             raise RuntimeError("ANDROID_NDK_ROOT or ANDROID_NDK_HOME must be set for Android cross-builds")
         args_list = [
             f"-DCMAKE_TOOLCHAIN_FILE={Path(android_ndk_root) / 'build' / 'cmake' / 'android.toolchain.cmake'}",
-            f"-DANDROID_ABI={options.android_abi}",
-            f"-DANDROID_PLATFORM={options.android_platform}",
-            f"-DANDROID_STL={options.android_stl}",
+            f"-DANDROID_ABI={android_abi}",
+            f"-DANDROID_PLATFORM={android_platform}",
+            f"-DANDROID_STL={android_stl}",
             "-DGFX_ENABLE_METAL=OFF",
         ]
         cmake_args.extend(args_list)
