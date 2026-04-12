@@ -46,7 +46,7 @@ def main() -> None:
         "https://github.com/KhronosGroup/Vulkan-Headers.git",
     )
 
-    print("ov-gfx-plugin repository layout looks valid")
+    print("gfx-plugin repository layout looks valid")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Export GitHub Actions outputs from the ov-gfx-plugin CI config."""
+"""Export GitHub Actions outputs from the gfx-plugin CI config."""
 
 from __future__ import annotations
 

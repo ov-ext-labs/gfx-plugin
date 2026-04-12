@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate standalone ov-gfx-plugin build artifacts."""
+"""Validate standalone gfx-plugin build artifacts."""
 
 from __future__ import annotations
 

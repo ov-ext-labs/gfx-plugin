@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ov-gfx-plugin-component-ci-${{ github.event.pull_request.number || github.ref }}
+  group: gfx-plugin-component-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -28,9 +28,9 @@ jobs:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.resolve-config.outputs.matrix) }}
-    uses: ovx-labs/ov-ci/.github/workflows/reusable-component-ci.yml@main
+    uses: ovx-labs/ci/.github/workflows/reusable-component-ci.yml@main
     with:
-      component: ov-gfx-plugin
+      component: gfx-plugin
       job-name: ${{ matrix.job_name }}
       runs-on: ${{ matrix.runs_on }}
       openvino-repo: ${{ matrix.openvino_repo }}

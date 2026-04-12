@@ -40,7 +40,7 @@ def parse_args() -> argparse.Namespace:
             "gfx-rpi-vulkan-aarch64.toolchain.cmake for direct use with cmake."
         )
     )
-    parser.add_argument("--config", default=str(DEFAULT_CONFIG_PATH), help="Path to the ov-gfx-plugin CI config file")
+    parser.add_argument("--config", default=str(DEFAULT_CONFIG_PATH), help="Path to the gfx-plugin CI config file")
     parser.add_argument("--platform-key", default="", help="Optional CI platform key used to select the RPi profile")
     parser.add_argument("--output-dir", required=True, help="Directory where the toolchain bundle is generated")
     parser.add_argument(

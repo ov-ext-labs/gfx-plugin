@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Load and normalize CI configuration for ov-gfx-plugin."""
+"""Load and normalize CI configuration for gfx-plugin."""
 
 from __future__ import annotations
 

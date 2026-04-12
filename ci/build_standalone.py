@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build ov-gfx-plugin standalone against a prepared OpenVINO install tree."""
+"""Build gfx-plugin standalone against a prepared OpenVINO install tree."""
 
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ def run(cmd: list[str]) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Build ov-gfx-plugin against a prepared OpenVINO install tree.")
+    parser = argparse.ArgumentParser(description="Build gfx-plugin against a prepared OpenVINO install tree.")
     parser.add_argument("--target-platform", choices=("host", "android", "rpi"), default="host")
     parser.add_argument("--config", default="")
     parser.add_argument("--platform-key", default="")
