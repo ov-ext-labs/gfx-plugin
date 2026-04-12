@@ -1,16 +1,125 @@
 {
-  "android": {
-    "abi": "arm64-v8a",
-    "api_level": "36",
-    "stl": "c++_shared",
-    "ndk_version": "29.0.14206865",
-    "sdk_packages": [
-      "platform-tools",
-      "platforms;android-36"
-    ],
-    "tbb": {
-      "repo": "https://github.com/uxlfoundation/oneTBB",
-      "ref": "v2022.3.0"
+  "defaults": {
+    "submodules": "recursive",
+    "validation_command": "python3 ci/validate_repo.py",
+    "test_command": "python3 ci/validate_artifacts.py",
+    "openvino": {
+      "repo": "ovx-labs/openvino",
+      "ref": "master",
+      "submodules": "recursive",
+      "ubuntu_packages_common": [
+        "build-essential",
+        "ninja-build",
+        "ccache",
+        "pkgconf",
+        "git",
+        "python3-pip",
+        "python3-venv",
+        "python3-setuptools"
+      ],
+      "cmake_args_common": [
+        "-DENABLE_INTEL_CPU=OFF",
+        "-DENABLE_INTEL_GPU=OFF",
+        "-DENABLE_INTEL_NPU=OFF",
+        "-DENABLE_PYTHON=OFF",
+        "-DENABLE_JS=OFF",
+        "-DENABLE_SAMPLES=OFF",
+        "-DENABLE_TESTS=OFF",
+        "-DENABLE_OV_ONNX_FRONTEND=OFF",
+        "-DENABLE_OV_PADDLE_FRONTEND=OFF",
+        "-DENABLE_OV_TF_FRONTEND=OFF",
+        "-DENABLE_OV_TF_LITE_FRONTEND=OFF"
+      ]
     }
-  }
+  },
+  "platforms": [
+    {
+      "key": "linux-rpi-aarch64",
+      "job_name": "GFX | Linux RPi AArch64",
+      "runs_on": "ubuntu-latest",
+      "target_platform": "rpi",
+      "dependency_setup_command": "python3 ci/prepare_rpi_toolchain.py --github-env \"$GITHUB_ENV\"",
+      "openvino": {
+        "ubuntu_packages": [
+          "libpython3-dev",
+          "pybind11-dev",
+          "libffi-dev"
+        ],
+        "cmake_args": [
+          "-DCMAKE_TOOLCHAIN_FILE=${GFX_RPI_TOOLCHAIN_FILE}",
+          "-DTHREADING=SEQ"
+        ]
+      },
+      "rpi": {
+        "debian_mirror": "https://deb.debian.org/debian",
+        "vulkan_headers_release": "v1.3.239",
+        "sysroot_profile": "rpi5-bookworm",
+        "sysroot_profiles": {
+          "rpi5-bookworm": {
+            "description": "Generic Raspberry Pi 4/5 userspace profile based on Debian Bookworm arm64 packages",
+            "suite": "bookworm",
+            "arch": "arm64",
+            "triple": "aarch64-linux-gnu",
+            "compile_flags": [
+              "-march=armv8-a"
+            ],
+            "gcc_version": "12",
+            "packages": [
+              "gcc-12-base",
+              "libatomic1",
+              "libc6",
+              "libc6-dev",
+              "libgcc-12-dev",
+              "libgcc-s1",
+              "libstdc++-12-dev",
+              "libstdc++6",
+              "linux-libc-dev",
+              "libvulkan1",
+              "zlib1g",
+              "zlib1g-dev"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "key": "macos-arm64",
+      "job_name": "GFX | macOS arm64",
+      "runs_on": "macos-14",
+      "target_platform": "host",
+      "dependency_setup_command": "",
+      "openvino": {
+        "ubuntu_packages": [],
+        "cmake_args": []
+      }
+    },
+    {
+      "key": "android-arm64",
+      "job_name": "GFX | Android arm64",
+      "runs_on": "ubuntu-latest",
+      "target_platform": "android",
+      "dependency_setup_command": "python3 ci/prepare_android_tbb.py --github-env \"$GITHUB_ENV\"",
+      "openvino": {
+        "ubuntu_packages": [
+          "libpython3-dev",
+          "unzip"
+        ],
+        "cmake_args": []
+      },
+      "android": {
+        "abi": "arm64-v8a",
+        "api_level": "36",
+        "stl": "c++_shared",
+        "ndk_version": "29.0.14206865",
+        "sdk_packages": [
+          "platform-tools",
+          "platforms;android-36"
+        ],
+        "tbb": {
+          "repo": "https://github.com/uxlfoundation/oneTBB",
+          "ref": "v2022.3.0"
+        }
+      }
+    }
+  ]
 }

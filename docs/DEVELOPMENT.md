@@ -101,8 +101,8 @@ git submodule update --init modules/gfx_plugin/third_party/Vulkan-Headers
 ```
 
 The toolchain builder expects that submodule to be checked out at the upstream
-`Vulkan-Headers` release currently pinned by the module for Raspberry Pi 4/5
-Bookworm compatibility: `v1.3.239`.
+`Vulkan-Headers` release pinned in `config/ci_versions.json` for the Raspberry
+Pi toolchain profile.
 
 ## Where To Start Reading
 Read in this order:

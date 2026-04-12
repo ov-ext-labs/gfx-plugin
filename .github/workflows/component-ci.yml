@@ -16,14 +16,7 @@ jobs:
     name: Resolve CI Config
     runs-on: ubuntu-latest
     outputs:
-      android_abi: ${{ steps.config.outputs.android_abi }}
-      android_api_level: ${{ steps.config.outputs.android_api_level }}
-      android_stl: ${{ steps.config.outputs.android_stl }}
-      android_ndk_version: ${{ steps.config.outputs.android_ndk_version }}
-      android_sdk_packages: ${{ steps.config.outputs.android_sdk_packages }}
-      android_tbb_repo: ${{ steps.config.outputs.android_tbb_repo }}
-      android_tbb_ref: ${{ steps.config.outputs.android_tbb_ref }}
-      android_openvino_cmake_args: ${{ steps.config.outputs.android_openvino_cmake_args }}
+      matrix: ${{ steps.config.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
       - id: config
@@ -34,87 +27,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: linux-rpi-aarch64
-            job_name: GFX | Linux RPi AArch64
-            runs_on: ubuntu-latest
-            openvino_ubuntu_packages: >-
-              build-essential
-              ninja-build
-              ccache
-              pkgconf
-              git
-              python3-pip
-              python3-venv
-              python3-setuptools
-              libpython3-dev
-              pybind11-dev
-              libffi-dev
-            dependency_setup_command: >-
-              python3 ci/prepare_rpi_toolchain.py --github-env "$GITHUB_ENV"
-            openvino_cmake_args: >-
-              -DCMAKE_TOOLCHAIN_FILE=${GFX_RPI_TOOLCHAIN_FILE}
-              -DTHREADING=SEQ
-              -DENABLE_INTEL_CPU=OFF
-              -DENABLE_INTEL_GPU=OFF
-              -DENABLE_INTEL_NPU=OFF
-              -DENABLE_PYTHON=OFF
-              -DENABLE_JS=OFF
-              -DENABLE_SAMPLES=OFF
-              -DENABLE_TESTS=OFF
-              -DENABLE_OV_ONNX_FRONTEND=OFF
-              -DENABLE_OV_PADDLE_FRONTEND=OFF
-              -DENABLE_OV_TF_FRONTEND=OFF
-              -DENABLE_OV_TF_LITE_FRONTEND=OFF
-            build_command: >-
-              python3 ci/build_standalone.py
-              --target-platform rpi
-          - name: macos
-            job_name: GFX | macOS arm64
-            runs_on: macos-14
-            openvino_ubuntu_packages: ""
-            dependency_setup_command: ""
-            openvino_cmake_args: >-
-              -DENABLE_INTEL_CPU=OFF
-              -DENABLE_INTEL_GPU=OFF
-              -DENABLE_INTEL_NPU=OFF
-              -DENABLE_PYTHON=OFF
-              -DENABLE_JS=OFF
-              -DENABLE_SAMPLES=OFF
-              -DENABLE_TESTS=OFF
-              -DENABLE_OV_ONNX_FRONTEND=OFF
-              -DENABLE_OV_PADDLE_FRONTEND=OFF
-              -DENABLE_OV_TF_FRONTEND=OFF
-              -DENABLE_OV_TF_LITE_FRONTEND=OFF
-            build_command: python3 ci/build_standalone.py
-          - name: android-arm64
-            job_name: GFX | Android arm64
-            runs_on: ubuntu-latest
-            openvino_ubuntu_packages: >-
-              build-essential
-              ninja-build
-              ccache
-              pkgconf
-              git
-              libpython3-dev
-              python3-pip
-              python3-venv
-              python3-setuptools
-              unzip
+        include: ${{ fromJson(needs.resolve-config.outputs.matrix) }}
     uses: ovx-labs/ov-ci/.github/workflows/reusable-component-ci.yml@main
     with:
       component: ov-gfx-plugin
       job-name: ${{ matrix.job_name }}
       runs-on: ${{ matrix.runs_on }}
-      openvino-repo: ovx-labs/openvino
-      openvino-ref: master
-      openvino-submodules: recursive
-      android-ndk-version: ${{ matrix.name == 'android-arm64' && needs.resolve-config.outputs.android_ndk_version || '' }}
-      android-sdk-packages: ${{ matrix.name == 'android-arm64' && needs.resolve-config.outputs.android_sdk_packages || '' }}
-      dependency-setup-command: ${{ matrix.name == 'android-arm64' && 'python3 ci/prepare_android_tbb.py --github-env "$GITHUB_ENV"' || matrix.dependency_setup_command }}
+      openvino-repo: ${{ matrix.openvino_repo }}
+      openvino-ref: ${{ matrix.openvino_ref }}
+      openvino-submodules: ${{ matrix.openvino_submodules }}
+      android-ndk-version: ${{ matrix.android_ndk_version }}
+      android-sdk-packages: ${{ matrix.android_sdk_packages }}
+      dependency-setup-command: ${{ matrix.dependency_setup_command }}
       openvino-ubuntu-packages: ${{ matrix.openvino_ubuntu_packages }}
-      openvino-cmake-args: ${{ matrix.name == 'android-arm64' && needs.resolve-config.outputs.android_openvino_cmake_args || matrix.openvino_cmake_args }}
-      submodules: recursive
-      validation-command: python3 ci/validate_repo.py
-      build-command: ${{ matrix.name == 'android-arm64' && 'python3 ci/build_standalone.py --target-platform android' || matrix.build_command }}
-      test-command: python3 ci/validate_artifacts.py
+      openvino-cmake-args: ${{ matrix.openvino_cmake_args }}
+      submodules: ${{ matrix.submodules }}
+      validation-command: ${{ matrix.validation_command }}
+      build-command: ${{ matrix.build_command }}
+      test-command: ${{ matrix.test_command }}

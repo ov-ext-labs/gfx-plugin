@@ -9,6 +9,8 @@ import shlex
 import subprocess
 from pathlib import Path
 
+from ci_config import DEFAULT_CONFIG_PATH, get_platform_config, load_ci_config
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT_DIR = REPO_ROOT / ".ci" / "toolchains" / "rpi-vulkan"
@@ -17,8 +19,10 @@ TOOLCHAIN_BUILDER = REPO_ROOT / "tools" / "gfx_rpi_vulkan_toolchain_builder.py"
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Prepare the Raspberry Pi Vulkan toolchain bundle for CI.")
+    parser.add_argument("--config", default="")
+    parser.add_argument("--platform-key", default="")
     parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR))
-    parser.add_argument("--sysroot-profile", default="rpi5-bookworm")
+    parser.add_argument("--sysroot-profile", default="")
     parser.add_argument("--github-env", default=os.environ.get("GITHUB_ENV", ""))
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args()
@@ -41,18 +45,30 @@ def append_env(github_env: Path, name: str, value: str, *, dry_run: bool) -> Non
 
 def main() -> int:
     args = parse_args()
+    config = load_ci_config(args.config or None)
+    platform_config = get_platform_config(
+        config,
+        platform_key=args.platform_key or None,
+        target_platform="rpi",
+    )
+    rpi_config = platform_config["rpi"]
     output_dir = Path(args.output_dir).resolve()
     toolchain_file = output_dir / "cmake" / "gfx-rpi-vulkan-aarch64.toolchain.cmake"
     sysroot_dir = output_dir / "sysroot"
+    sysroot_profile = args.sysroot_profile or str(rpi_config["sysroot_profile"])
 
     command = [
         "python3",
         str(TOOLCHAIN_BUILDER),
+        "--config",
+        str(DEFAULT_CONFIG_PATH if not args.config else Path(args.config).resolve()),
         "--output-dir",
         str(output_dir),
         "--sysroot-profile",
-        args.sysroot_profile,
+        sysroot_profile,
     ]
+    if args.platform_key:
+        command.extend(["--platform-key", args.platform_key])
     if args.dry_run:
         command.append("--dry-run")
     run(command, dry_run=args.dry_run)

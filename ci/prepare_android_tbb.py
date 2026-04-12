@@ -9,7 +9,7 @@ import shlex
 import subprocess
 from pathlib import Path
 
-from ci_config import load_ci_config
+from ci_config import get_platform_config, load_ci_config
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -19,6 +19,7 @@ DEFAULT_CACHE_ROOT = REPO_ROOT / ".ci" / "android-deps"
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build and export Android oneTBB for downstream OpenVINO builds.")
     parser.add_argument("--config", default="")
+    parser.add_argument("--platform-key", default="")
     parser.add_argument("--github-env", default=os.environ.get("GITHUB_ENV", ""))
     parser.add_argument("--cache-root", default=str(DEFAULT_CACHE_ROOT))
     parser.add_argument("--tbb-repo", default="")
@@ -50,13 +51,19 @@ def ensure_clone(source_dir: Path, repo: str, ref: str) -> None:
 
 def main() -> int:
     args = parse_args()
-    config = load_ci_config(args.config or None)["android"]
-    tbb_config = config["tbb"]
+    config = load_ci_config(args.config or None)
+    platform_config = get_platform_config(
+        config,
+        platform_key=args.platform_key or None,
+        target_platform="android",
+    )
+    android_config = platform_config["android"]
+    tbb_config = android_config["tbb"]
     tbb_repo = args.tbb_repo or str(tbb_config["repo"])
     tbb_ref = args.tbb_ref or str(tbb_config["ref"])
-    android_abi = args.android_abi or str(config["abi"])
-    android_platform = args.android_platform or str(config["api_level"])
-    android_stl = args.android_stl or str(config["stl"])
+    android_abi = args.android_abi or str(android_config["abi"])
+    android_platform = args.android_platform or str(android_config["api_level"])
+    android_stl = args.android_stl or str(android_config["stl"])
     android_ndk_root = os.environ.get("ANDROID_NDK_ROOT") or os.environ.get("ANDROID_NDK_HOME")
     if not android_ndk_root:
         raise RuntimeError("ANDROID_NDK_ROOT or ANDROID_NDK_HOME must be set before preparing Android oneTBB")

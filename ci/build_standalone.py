@@ -10,7 +10,7 @@ import shlex
 import subprocess
 from pathlib import Path
 
-from ci_config import load_ci_config
+from ci_config import get_platform_config, load_ci_config
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -26,6 +26,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build ov-gfx-plugin against a prepared OpenVINO install tree.")
     parser.add_argument("--target-platform", choices=("host", "android", "rpi"), default="host")
     parser.add_argument("--config", default="")
+    parser.add_argument("--platform-key", default="")
     parser.add_argument("--android-abi", default="")
     parser.add_argument("--android-platform", default="")
     parser.add_argument("--android-stl", default="")
@@ -54,10 +55,16 @@ def configure_args(options: argparse.Namespace) -> list[str]:
     if openvino_dir:
         cmake_args.append(f"-DOpenVINO_DIR={openvino_dir}")
     if options.target_platform == "android":
-        config = load_ci_config(options.config or None)["android"]
-        android_abi = options.android_abi or str(config["abi"])
-        android_platform = options.android_platform or str(config["api_level"])
-        android_stl = options.android_stl or str(config["stl"])
+        config = load_ci_config(options.config or None)
+        platform_config = get_platform_config(
+            config,
+            platform_key=options.platform_key or None,
+            target_platform=options.target_platform,
+        )
+        android_config = platform_config["android"]
+        android_abi = options.android_abi or str(android_config["abi"])
+        android_platform = options.android_platform or str(android_config["api_level"])
+        android_stl = options.android_stl or str(android_config["stl"])
         android_ndk_root = os.environ.get("ANDROID_NDK_ROOT") or os.environ.get("ANDROID_NDK_HOME")
         if not android_ndk_root:
             raise RuntimeError("ANDROID_NDK_ROOT or ANDROID_NDK_HOME must be set for Android cross-builds")
