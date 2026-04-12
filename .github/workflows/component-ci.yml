@@ -7,6 +7,10 @@ on:
       - main
   workflow_dispatch:
 
+concurrency:
+  group: ov-gfx-plugin-component-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   component:
     strategy:
@@ -14,6 +18,7 @@ jobs:
       matrix:
         include:
           - name: linux-rpi-aarch64
+            job_name: GFX | Linux RPi AArch64
             runs_on: ubuntu-latest
             openvino_ubuntu_packages: >-
               build-essential
@@ -47,6 +52,7 @@ jobs:
               python3 ci/build_standalone.py
               --target-platform rpi
           - name: macos
+            job_name: GFX | macOS arm64
             runs_on: macos-14
             openvino_ubuntu_packages: ""
             dependency_setup_command: ""
@@ -64,6 +70,7 @@ jobs:
               -DENABLE_OV_TF_LITE_FRONTEND=OFF
             build_command: python3 ci/build_standalone.py
           - name: android-arm64
+            job_name: GFX | Android arm64
             runs_on: ubuntu-latest
             android_ndk_version: 27.2.12479018
             openvino_ubuntu_packages: >-
@@ -104,6 +111,7 @@ jobs:
     uses: ovx-labs/ov-ci/.github/workflows/reusable-component-ci.yml@main
     with:
       component: ov-gfx-plugin
+      job-name: ${{ matrix.job_name }}
       runs-on: ${{ matrix.runs_on }}
       openvino-repo: ovx-labs/openvino
       openvino-ref: master
