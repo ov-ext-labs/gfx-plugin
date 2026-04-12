@@ -24,7 +24,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build ov-gfx-plugin against a prepared OpenVINO install tree.")
     parser.add_argument("--target-platform", choices=("host", "android", "rpi"), default="host")
     parser.add_argument("--android-abi", default="arm64-v8a")
-    parser.add_argument("--android-platform", default="35")
+    parser.add_argument("--android-platform", default="36")
     parser.add_argument("--android-stl", default="c++_shared")
     parser.add_argument("--toolchain-file", default="")
     return parser.parse_args()
