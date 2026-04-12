@@ -13,6 +13,7 @@ concurrency:
 
 jobs:
   component:
+    name: ${{ matrix.job_name }}
     strategy:
       fail-fast: false
       matrix:
