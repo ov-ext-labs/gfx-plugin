@@ -4,7 +4,7 @@
     "validation_command": "python3 ci/validate_repo.py",
     "test_command": "python3 ci/validate_artifacts.py",
     "openvino": {
-      "repo": "ovx-labs/openvino",
+      "repo": "ov-ext-labs/openvino",
       "ref": "master",
       "submodules": "recursive",
       "ubuntu_packages_common": [
