@@ -101,8 +101,8 @@ git submodule update --init modules/gfx_plugin/third_party/Vulkan-Headers
 ```
 
 The toolchain builder expects that submodule to be checked out at the upstream
-`Vulkan-Headers` release pinned in `config/ci_versions.json` for the Raspberry
-Pi toolchain profile.
+`Vulkan-Headers` release currently pinned by the module for Raspberry Pi 4/5
+Bookworm compatibility: `v1.3.239`.
 
 ## Where To Start Reading
 Read in this order:
@@ -166,7 +166,11 @@ For the current codebase, also check whether the op should participate in:
 - backend-specialized fast paths such as Vulkan direct or chunked routes
 - reusable bytes-arg materialization or immutable const-buffer caching
 
+For Reduce-like work, prefer the existing typed reduction extraction in `src/mlir/mlir_builder_reduce.cpp`. The current builder reads axes and `keep_dims` from concrete Reduce op classes such as `ReduceSum`, `ReduceMean`, `ReduceMax`, `ReduceMin`, `ReduceProd`, `ReduceL1`, and `ReduceL2` instead of relying on a looser generic reduction-base path.
+
 For Slice-like work, note that the current lowering prefers `tensor.extract_slice` instead of synthesizing a `linalg.generic` copy. Shared metadata extraction in `src/mlir/slice_generic_codegen.cpp` still accepts both forms so older paths and debug flows remain readable.
+
+For layout-cleanup work around DFL-style postprocessing tails, the current rewrite target is a value-preserving `Softmax -> MatMul -> Reshape/Transpose` form. Do not describe the older synthetic 1x1 convolution rewrite as the active implementation.
 
 If the op needs fusion support, inspect:
 - `src/transforms/`
