@@ -106,9 +106,6 @@ target_link_libraries(gfx_runtime_common PRIVATE
     openvino::runtime
     openvino::runtime::dev)
 set_target_properties(gfx_runtime_common PROPERTIES POSITION_INDEPENDENT_CODE ON)
-if(DEFINED GFX_LLVM_EXTERNAL_TARGET)
-    add_dependencies(gfx_runtime_common ${GFX_LLVM_EXTERNAL_TARGET})
-endif()
 
 add_library(gfx_runtime_mlir STATIC)
 target_sources(gfx_runtime_mlir PRIVATE
@@ -151,9 +148,6 @@ target_link_libraries(gfx_plugin_metal PRIVATE
     openvino::runtime
     openvino::runtime::dev)
 set_target_properties(gfx_plugin_metal PROPERTIES POSITION_INDEPENDENT_CODE ON)
-if(DEFINED GFX_LLVM_EXTERNAL_TARGET)
-    add_dependencies(gfx_plugin_metal ${GFX_LLVM_EXTERNAL_TARGET})
-endif()
 
 add_library(gfx_plugin_vulkan STATIC)
 target_sources(gfx_plugin_vulkan PRIVATE
@@ -166,9 +160,6 @@ target_link_libraries(gfx_plugin_vulkan PRIVATE
     openvino::runtime
     openvino::runtime::dev)
 set_target_properties(gfx_plugin_vulkan PROPERTIES POSITION_INDEPENDENT_CODE ON)
-if(DEFINED GFX_LLVM_EXTERNAL_TARGET)
-    add_dependencies(gfx_plugin_vulkan ${GFX_LLVM_EXTERNAL_TARGET})
-endif()
 
 # Build GFX plugin as SHARED (not MODULE) to allow normal linking/registration in OpenVINO
 add_library(${TARGET_NAME} SHARED)
@@ -183,10 +174,6 @@ target_link_libraries(${TARGET_NAME} PRIVATE
     gfx_plugin_core
     gfx_plugin_metal
     gfx_plugin_vulkan)
-if(DEFINED GFX_LLVM_EXTERNAL_TARGET)
-    add_dependencies(gfx_plugin_core ${GFX_LLVM_EXTERNAL_TARGET})
-    add_dependencies(${TARGET_NAME} ${GFX_LLVM_EXTERNAL_TARGET})
-endif()
 
 # On macOS, force ".so" suffix so OpenVINO loader picks the plugin consistently.
 if(APPLE)

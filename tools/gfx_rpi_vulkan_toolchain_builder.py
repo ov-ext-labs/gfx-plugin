@@ -22,14 +22,36 @@ import urllib.request
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 PLUGIN_ROOT = SCRIPT_DIR.parent
-CI_ROOT = PLUGIN_ROOT / "ci"
-if str(CI_ROOT) not in sys.path:
-    sys.path.insert(0, str(CI_ROOT))
-
-from ci_config import DEFAULT_CONFIG_PATH, get_platform_config, load_ci_config
-
 LLVM_SRC_ROOT = PLUGIN_ROOT / "third_party" / "llvm-project" / "llvm"
 VULKAN_HEADERS_ROOT = PLUGIN_ROOT / "third_party" / "Vulkan-Headers"
+VULKAN_HEADERS_RELEASE = "v1.3.239"
+DEFAULT_DEBIAN_MIRROR = "https://deb.debian.org/debian"
+DEFAULT_SYSROOT_PROFILE = "rpi5-bookworm"
+
+SYSROOT_PROFILES: dict[str, dict[str, object]] = {
+    "rpi5-bookworm": {
+        "description": "Generic Raspberry Pi 4/5 userspace profile based on Debian Bookworm arm64 packages",
+        "suite": "bookworm",
+        "arch": "arm64",
+        "triple": "aarch64-linux-gnu",
+        "compile_flags": ["-march=armv8-a"],
+        "gcc_version": "12",
+        "packages": [
+            "gcc-12-base",
+            "libatomic1",
+            "libc6",
+            "libc6-dev",
+            "libgcc-12-dev",
+            "libgcc-s1",
+            "libstdc++-12-dev",
+            "libstdc++6",
+            "linux-libc-dev",
+            "libvulkan1",
+            "zlib1g",
+            "zlib1g-dev",
+        ],
+    }
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -40,12 +62,11 @@ def parse_args() -> argparse.Namespace:
             "gfx-rpi-vulkan-aarch64.toolchain.cmake for direct use with cmake."
         )
     )
-    parser.add_argument("--config", default=str(DEFAULT_CONFIG_PATH), help="Path to the gfx-plugin CI config file")
-    parser.add_argument("--platform-key", default="", help="Optional CI platform key used to select the RPi profile")
     parser.add_argument("--output-dir", required=True, help="Directory where the toolchain bundle is generated")
     parser.add_argument(
         "--sysroot-profile",
-        default="",
+        default=DEFAULT_SYSROOT_PROFILE,
+        choices=sorted(SYSROOT_PROFILES),
         help="Generic target sysroot profile to assemble",
     )
     parser.add_argument(
@@ -56,7 +77,7 @@ def parse_args() -> argparse.Namespace:
         "--sysroot-tarball",
         help="Use an existing target sysroot archive instead of downloading packages",
     )
-    parser.add_argument("--debian-mirror", default="", help="Debian mirror used for generic package-based sysroot")
+    parser.add_argument("--debian-mirror", default=DEFAULT_DEBIAN_MIRROR, help="Debian mirror used for generic package-based sysroot")
     parser.add_argument("--cmake-generator", default="Ninja", help="CMake generator for building host LLVM")
     parser.add_argument("--llvm-build-type", default="Release", help="Build type for host LLVM tools")
     parser.add_argument("--dry-run", action="store_true", help="Print actions without executing them")
@@ -286,14 +307,7 @@ def copy_user_sysroot(sysroot_source: Path, sysroot_dir: Path, *, dry_run: bool)
     normalize_absolute_sysroot_symlinks(sysroot_dir, dry_run=dry_run)
 
 
-def materialize_sysroot(
-    args: argparse.Namespace,
-    output_dir: Path,
-    profile: dict[str, object],
-    debian_mirror: str,
-    *,
-    dry_run: bool,
-) -> None:
+def materialize_sysroot(args: argparse.Namespace, output_dir: Path, profile: dict[str, object], *, dry_run: bool) -> None:
     sysroot_dir = output_dir / "sysroot"
     if args.sysroot_dir and args.sysroot_tarball:
         raise RuntimeError("Use only one of --sysroot-dir or --sysroot-tarball")
@@ -315,7 +329,7 @@ def materialize_sysroot(
         normalize_absolute_sysroot_symlinks(sysroot_dir, dry_run=dry_run)
         return
 
-    build_generic_sysroot_from_packages(output_dir, sysroot_dir, profile, debian_mirror, dry_run=dry_run)
+    build_generic_sysroot_from_packages(output_dir, sysroot_dir, profile, args.debian_mirror, dry_run=dry_run)
 
 
 def build_host_llvm_tools(output_dir: Path, generator: str, build_type: str, *, dry_run: bool) -> Path:
@@ -354,11 +368,11 @@ def build_host_llvm_tools(output_dir: Path, generator: str, build_type: str, *, 
     return llvm_install_dir / "bin"
 
 
-def install_vulkan_headers(sysroot_dir: Path, vulkan_headers_release: str, *, dry_run: bool) -> None:
+def install_vulkan_headers(sysroot_dir: Path, *, dry_run: bool) -> None:
     if not VULKAN_HEADERS_ROOT.exists():
         raise RuntimeError(
             "Vendored Vulkan headers were not found. "
-            f"Expected {VULKAN_HEADERS_ROOT} prepared from the upstream {vulkan_headers_release} release."
+            f"Expected {VULKAN_HEADERS_ROOT} prepared from the upstream {VULKAN_HEADERS_RELEASE} release."
         )
     include_root = find_vulkan_include_root(VULKAN_HEADERS_ROOT)
     target_include_dir = sysroot_dir / "usr" / "include"
@@ -551,22 +565,14 @@ set(ENV{{PKG_CONFIG_LIBDIR}}
     return toolchain_path
 
 
-def write_manifest(
-    output_dir: Path,
-    profile_name: str,
-    profile: dict[str, object],
-    toolchain_file: Path,
-    vulkan_headers_release: str,
-    *,
-    dry_run: bool,
-) -> None:
+def write_manifest(output_dir: Path, profile_name: str, profile: dict[str, object], toolchain_file: Path, *, dry_run: bool) -> None:
     manifest = {
         "bundle_root": str(output_dir),
         "generated_toolchain_file": str(toolchain_file),
         "plugin_root": str(PLUGIN_ROOT),
         "llvm_source_root": str(LLVM_SRC_ROOT),
         "vulkan_headers_root": str(VULKAN_HEADERS_ROOT),
-        "vulkan_headers_release": vulkan_headers_release,
+        "vulkan_headers_release": VULKAN_HEADERS_RELEASE,
         "sysroot_profile": profile_name,
         "target": {
             "triple": profile["triple"],
@@ -599,60 +605,32 @@ def validate_paths(output_dir: Path, *, dry_run: bool) -> None:
         raise RuntimeError("Toolchain bundle is incomplete. Missing paths:\n" + "\n".join(missing))
 
 
-def load_rpi_builder_config(args: argparse.Namespace) -> tuple[str, str, dict[str, object], dict[str, object]]:
-    config = load_ci_config(args.config)
-    platform_config = get_platform_config(
-        config,
-        platform_key=args.platform_key or None,
-        target_platform="rpi",
-    )
-    rpi_config = platform_config["rpi"]
-    sysroot_profiles = rpi_config["sysroot_profiles"]
-    sysroot_profile_name = args.sysroot_profile or str(rpi_config["sysroot_profile"])
-    if sysroot_profile_name not in sysroot_profiles:
-        raise RuntimeError(f"Unknown RPi sysroot profile: {sysroot_profile_name}")
-    return (
-        sysroot_profile_name,
-        args.debian_mirror or str(rpi_config["debian_mirror"]),
-        rpi_config,
-        sysroot_profiles[sysroot_profile_name],
-    )
-
-
 def main() -> int:
     args = parse_args()
     require_command("cmake")
     output_dir = Path(args.output_dir).resolve()
-    sysroot_profile_name, debian_mirror, rpi_config, profile = load_rpi_builder_config(args)
-    vulkan_headers_release = str(rpi_config["vulkan_headers_release"])
+    profile = SYSROOT_PROFILES[args.sysroot_profile]
     if not LLVM_SRC_ROOT.exists():
         raise RuntimeError(f"Vendored LLVM source tree was not found: {LLVM_SRC_ROOT}")
     if not VULKAN_HEADERS_ROOT.exists():
         raise RuntimeError(
             "Vendored Vulkan headers were not found. "
-            f"Expected {VULKAN_HEADERS_ROOT} from the upstream {vulkan_headers_release} release."
+            f"Expected {VULKAN_HEADERS_ROOT} from the upstream {VULKAN_HEADERS_RELEASE} release."
         )
 
     print(f"toolchain bundle root: {output_dir}")
-    print(f"sysroot profile: {sysroot_profile_name} - {profile['description']}")
-    print(f"Vulkan-Headers submodule: {VULKAN_HEADERS_ROOT} ({vulkan_headers_release})")
+    print(f"sysroot profile: {args.sysroot_profile} - {profile['description']}")
+    print(f"Vulkan-Headers submodule: {VULKAN_HEADERS_ROOT} ({VULKAN_HEADERS_RELEASE})")
     ensure_dir(output_dir, dry_run=args.dry_run)
 
     llvm_bin_dir = build_host_llvm_tools(output_dir, args.cmake_generator, args.llvm_build_type, dry_run=args.dry_run)
     print(f"host LLVM tools: {llvm_bin_dir}")
-    materialize_sysroot(args, output_dir, profile, debian_mirror, dry_run=args.dry_run)
-    install_vulkan_headers(output_dir / "sysroot", vulkan_headers_release, dry_run=args.dry_run)
+    materialize_sysroot(args, output_dir, profile, dry_run=args.dry_run)
+    install_vulkan_headers(output_dir / "sysroot", dry_run=args.dry_run)
     create_python_wrappers(output_dir, profile, dry_run=args.dry_run)
     create_launchers(output_dir, dry_run=args.dry_run)
     toolchain_file = generate_toolchain_file(output_dir, profile, dry_run=args.dry_run)
-    write_manifest(
-        output_dir,
-        sysroot_profile_name,
-        profile,
-        toolchain_file,
-        vulkan_headers_release,
-        dry_run=args.dry_run,
-    )
+    write_manifest(output_dir, args.sysroot_profile, profile, toolchain_file, dry_run=args.dry_run)
     validate_paths(output_dir, dry_run=args.dry_run)
     print(f"generated toolchain file: {toolchain_file}")
     return 0

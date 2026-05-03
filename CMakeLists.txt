@@ -334,10 +334,6 @@ if(ENABLE_GFX_MLIR)
         file(MAKE_DIRECTORY ${GFX_LLVM_INSTALL_DIR}/include)
         file(MAKE_DIRECTORY ${GFX_LLVM_INSTALL_DIR}/lib)
         set(MLIR_INCLUDE_DIRS
-            ${GFX_LLVM_PROJECT_SOURCE_DIR}/llvm/include
-            ${GFX_LLVM_PROJECT_SOURCE_DIR}/mlir/include
-            ${GFX_LLVM_BUILD_DIR}/include
-            ${GFX_LLVM_BUILD_DIR}/tools/mlir/include
             ${GFX_LLVM_INSTALL_DIR}/include
             CACHE INTERNAL "MLIR include directories for GFX plugin")
 
